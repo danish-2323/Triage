@@ -7,8 +7,22 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from src.loader import load_vulnerabilities, load_demo_profiles
 from src.matcher import match_profile, split_candidates
 from src.ranker import rank, negative_test, score_row
+from src.aliases import names_match
 
 DATA_DIR = Path(__file__).parent.parent / "data"
+
+
+def test_aws_autofill_products_match_cloud_product_family():
+    for product in [
+        "amazon web services", "amazon ec2", "amazon s3",
+        "amazon rds", "amazon rds", "amazon s3", "amazon vpc",
+    ]:
+        assert names_match(product, "Cloud Database Engine")
+
+
+def test_banking_autofill_products_match_core_banking_family():
+    products = ["core banking system", "Finacle", "Oracle FLEXCUBE", "SBI CBS"]
+    assert all(names_match(product, "Core Banking Framework") for product in products)
 
 
 def test_real_dataset_loads_and_two_profiles_differ():

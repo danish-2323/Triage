@@ -345,7 +345,7 @@ else:
 
 use_ai_phrasing = False
 if llm_phraser.is_available():
-    use_ai_phrasing = st.sidebar.toggle("Use AI phrasing (Featherless)", value=False,
+    use_ai_phrasing = st.sidebar.toggle("Use AI phrasing", value=False,
                                          help="Restyles wording only. Facts always come from the data, never the model.")
 else:
     st.sidebar.caption("AI phrasing unavailable (no FEATHERLESS_API_KEY or GROQ_API_KEY set) — using template text.")

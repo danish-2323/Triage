@@ -37,10 +37,10 @@ FEATHERLESS_MODELS_URL = "https://api.featherless.ai/v1/models"
 GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 
 # Model ids prefixed with this are routed to Groq instead of Featherless.
-# e.g. "groq:llama-3.1-8b-instant" -> Groq, model "llama-3.1-8b-instant".
+# e.g. "groq:allam-2-7b" -> Groq, model "allam-2-7b".
 GROQ_PREFIX = "groq:"
 
-DEFAULT_MODEL = "groq:llama-3.1-8b-instant"
+DEFAULT_MODEL = "groq:allam-2-7b"
 
 # A small curated shortlist shown in the UI's model picker. Groq is listed
 # first and is the default -- it's a low-latency inference service and
@@ -50,8 +50,8 @@ DEFAULT_MODEL = "groq:llama-3.1-8b-instant"
 # network round trip. The /models API endpoint will merge this with a live
 # catalog fetch when possible.
 SUGGESTED_MODELS = [
-    {"id": "groq:llama-3.1-8b-instant", "label": "Groq · Llama 3.1 8B Instant (default, fastest)"},
-    {"id": "groq:llama-3.3-70b-versatile", "label": "Groq · Llama 3.3 70B (fast, higher quality)"},
+    {"id": "groq:allam-2-7b", "label": "Groq · Allam 2 7B (default)"},
+    {"id": "groq:openai/gpt-oss-20b", "label": "Groq · GPT OSS 20B"},
     {"id": "featherless-ai/Qwerky-72B", "label": "Qwerky 72B"},
     {"id": "meta-llama/Meta-Llama-3.1-8B-Instruct", "label": "Llama 3.1 8B Instruct"},
     {"id": "mistralai/Mistral-7B-Instruct-v0.3", "label": "Mistral 7B Instruct"},
@@ -79,7 +79,7 @@ SYSTEM_PROMPT = (
 # doesn't immediately fall through to the slower Featherless models --
 # those are last since they're the ones most likely to time out.
 FALLBACK_MODELS = [
-    "groq:llama-3.3-70b-versatile",
+    "groq:openai/gpt-oss-20b",
     "featherless-ai/Qwerky-72B",
     "meta-llama/Meta-Llama-3.1-8B-Instruct",
     "mistralai/Mistral-7B-Instruct-v0.3",
@@ -148,9 +148,9 @@ def _post_chat_completion(url: str, api_key: str, model: str, messages: list,
         )
         resp.raise_for_status()
         data = resp.json()
-        text = data["choices"][0]["message"]["content"].strip()
+        text = _remove_reasoning(data["choices"][0]["message"]["content"])
         if not text:
-            return None, "empty response from model"
+            return None, "empty response after removing model reasoning"
         return text, None
     except requests.exceptions.Timeout:
         return None, f"timed out after {timeout}s"
@@ -159,6 +159,14 @@ def _post_chat_completion(url: str, api_key: str, model: str, messages: list,
         return None, f"HTTP {status}"
     except Exception as e:  # noqa: BLE001 - deliberately broad: never break triage over phrasing
         return None, f"{type(e).__name__}: {e}"[:200]
+
+
+def _remove_reasoning(text: str) -> str:
+    """Remove private reasoning that some hosted models include in content."""
+    text = re.sub(r"<think>.*?</think>", "", text, flags=re.IGNORECASE | re.DOTALL)
+    if re.match(r"^\s*<think\b", text, flags=re.IGNORECASE):
+        return ""
+    return text.strip()
 
 
 def call_featherless(system_prompt: str, user_content, model: str, timeout: int,

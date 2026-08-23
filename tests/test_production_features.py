@@ -8,6 +8,14 @@ from src.version_match import compare_version, VersionOutcome
 from src.matcher import match_profile, split_candidates
 from src.loader import normalize_profile
 from src.evaluate import evaluate
+from src.company_lookup import _canonicalize_products
+
+
+def test_autofill_products_are_canonical_database_options():
+    assert _canonicalize_products(["Finacle", "unknown vendor"], "financial services") == [
+        "Core Banking Framework"
+    ]
+    assert _canonicalize_products([], "banking") == ["Core Banking Framework"]
 
 
 # ---------------------------------------------------------------- version_match

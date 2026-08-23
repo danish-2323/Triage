@@ -20,7 +20,7 @@ docker compose up             # both, containerized
 
 No API key or internet connection is required for the core app — it runs
 entirely from the bundled CSV/JSON. Live data (below) and AI phrasing
-(`FEATHERLESS_API_KEY`, see `.env.example`) are both optional upgrades.
+(`FEATHERLESS_API_KEY` and/or `GROQ_API_KEY`) are both optional upgrades.
 
 ## What's new in this production pass
 

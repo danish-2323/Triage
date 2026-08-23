@@ -29,14 +29,14 @@ from src.llm_phraser import call_llm, is_available as _ai_available, _looks_like
 # generation from being the slow step in a live demo. Groq is default for
 # the same reason it's llm_phraser's default: low-latency inference, so
 # report generation isn't stuck waiting out Featherless timeouts first.
-REPORT_MODEL = "groq:llama-3.1-8b-instant"
+REPORT_MODEL = "groq:allam-2-7b"
 
 # Tried in order after REPORT_MODEL if it fails -- same reasoning as
 # llm_phraser.FALLBACK_MODELS: one overloaded/deprecated model shouldn't
 # knock the whole summary back to the template. A second fast Groq model
 # is tried before the slower Featherless ones.
 REPORT_FALLBACK_MODELS = [
-    "groq:llama-3.3-70b-versatile",
+    "groq:openai/gpt-oss-20b",
     "featherless-ai/Qwerky-72B",
     "meta-llama/Meta-Llama-3.1-8B-Instruct",
     "mistralai/Mistral-7B-Instruct-v0.3",

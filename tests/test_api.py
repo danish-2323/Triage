@@ -63,6 +63,7 @@ def test_models_endpoint_never_errors():
 
 def test_triage_use_ai_falls_back_without_key(monkeypatch):
     monkeypatch.delenv("FEATHERLESS_API_KEY", raising=False)
+    monkeypatch.delenv("GROQ_API_KEY", raising=False)
     resp = client.post("/triage", json={
         "profile": {"name": "Test Bank", "critical_products": ["Core Banking Framework"]},
         "top_n": 1,

@@ -617,7 +617,7 @@ async function checkAutofillAvailable(){
     const data = await r.json();
     if(!data.available){
       btn.disabled = true;
-      btn.title = 'AI autofill unavailable — no FEATHERLESS_API_KEY configured on the server';
+      btn.title = 'AI autofill unavailable — configure FEATHERLESS_API_KEY or GROQ_API_KEY on the server';
       btn.style.opacity = '0.5';
       btn.style.cursor = 'not-allowed';
     }
@@ -982,7 +982,7 @@ async function generateReport(){
 
     const es = data.executive_summary;
     const aiNote = es.used_ai
-      ? '✨ AI-written summary (Featherless) — wording only, over the stats shown below.'
+      ? `✨ AI-written summary (${escapeHTML(es.model || 'AI')}) — wording only, over the stats shown below.`
       : `Template summary (AI unavailable: ${escapeHTML(es.error || 'no key configured')}).`;
 
     let html = `

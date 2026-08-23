@@ -33,25 +33,35 @@ import time
 import requests
 
 from src.llm_phraser import call_llm, is_available as _ai_available
+from src.aliases import names_match
+
+PRODUCT_OPTIONS = (
+    "Cloud Database Engine",
+    "Core Banking Framework",
+    "Embedded IoT Gateway",
+    "Enterprise Router OS",
+    "Identity Provider SaaS",
+    "Web Application Firewall",
+)
 
 # Autofill only needs to extract a short JSON object, not write prose, so
 # a fast model is enough. Groq is the default here for the same reason as
 # llm_phraser/report: it's low-latency, so autofill isn't stuck waiting
 # out slow/timed-out Featherless attempts first.
-AUTOFILL_MODEL = "groq:llama-3.1-8b-instant"
+AUTOFILL_MODEL = "groq:allam-2-7b"
 
 # Tried in order if AUTOFILL_MODEL fails for any reason other than a
 # missing key (bad/retired model id, that model overloaded, etc.) -- same
 # fallback-chain contract as llm_phraser.phrase() / report.write_executive_summary().
 # A second fast Groq model is tried before the slower Featherless ones.
 AUTOFILL_FALLBACK_MODELS = [
-    "groq:llama-3.3-70b-versatile",
+    "groq:openai/gpt-oss-20b",
     "featherless-ai/Qwerky-72B",
     "meta-llama/Meta-Llama-3.1-8B-Instruct",
     "mistralai/Mistral-7B-Instruct-v0.3",
     "Qwen/Qwen2.5-72B-Instruct",
     "google/gemma-2-9b-it",
-    "groq:llama-3.1-8b-instant",
+    "groq:allam-2-7b",
 ]
 
 SYSTEM_PROMPT = (
@@ -65,14 +75,38 @@ SYSTEM_PROMPT = (
     '{"sector": string, "exposure": "internet-facing" or "internal", '
     '"importance": "critical", "high", or "normal", '
     '"service": short string naming their main customer-facing service, '
-    '"technologies": array of up to 8 short strings, each a specific '
-    'vendor/product name likely in their stack (e.g. "nginx", "wordpress", '
-    '"microsoft exchange"), lowercase, no version numbers}. '
+    '"technologies": array containing one or more values from this exact '
+    'list: "Cloud Database Engine", "Core Banking Framework", '
+    '"Embedded IoT Gateway", "Enterprise Router OS", '
+    '"Identity Provider SaaS", "Web Application Firewall"}. '
+    'Do not return vendor names, product names, or values outside this list. '
     "If you do not recognise the company or are not confident, still "
     "return your best generic guess for that sector -- never leave a "
     "field blank, and never invent a specific unpublicized breach, "
     "vendor contract, or internal system name presented as fact."
 )
+
+
+def _canonicalize_products(values, sector: str) -> list[str]:
+    products = []
+    for value in values if isinstance(values, list) else []:
+        for option in PRODUCT_OPTIONS:
+            if names_match(str(value), option):
+                if option not in products:
+                    products.append(option)
+                break
+
+    if products:
+        return products[:8]
+
+    sector_text = sector.lower()
+    if any(term in sector_text for term in ("bank", "financial")):
+        return ["Core Banking Framework"]
+    if any(term in sector_text for term in ("cloud", "technology", "software")):
+        return ["Cloud Database Engine"]
+    if any(term in sector_text for term in ("utility", "infrastructure", "industrial")):
+        return ["Embedded IoT Gateway"]
+    return ["Identity Provider SaaS"]
 
 
 class LookupStatus:
@@ -181,8 +215,9 @@ def suggest_profile(company_name: str, sector_hint: str = "", model: str = AUTOF
                 "importance": parsed.get("importance") if parsed.get("importance") in
                               ("critical", "high", "normal") else "high",
                 "service": str(parsed.get("service", "")).strip(),
-                "technologies": [str(t).strip().lower() for t in parsed.get("technologies", [])
-                                  if str(t).strip()][:8],
+                "technologies": _canonicalize_products(
+                    parsed.get("technologies", []), str(parsed.get("sector", ""))
+                ),
             }
             return LookupStatus(profile, used_ai=True)
 
